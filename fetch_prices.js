@@ -15,21 +15,27 @@ const connection = mysql.createConnection({
 connection.connect(error => {
   if (error) {
     console.error('Error connecting to MySQL:', error);
-    return;
+    process.exit(1);
   }
   console.log('Connected to MySQL');
 });
 
-// Function to fetch live prices from Binance
-async function fetchLivePrices() {
+// Function to fetch live prices from Binance with retry mechanism
+async function fetchLivePrices(retries = 3) {
   try {
     const response = await axios.get('https://api.binance.com/api/v3/ticker/price');
     const data = response.data;
     const usdtPairs = data.filter(item => item.symbol.endsWith('USDT'));
     return usdtPairs;
   } catch (error) {
-    console.error('Error fetching live prices:', error);
-    return [];
+    if (retries > 0) {
+      console.warn(`Retrying... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before retrying
+      return fetchLivePrices(retries - 1);
+    } else {
+      console.error('Error fetching live prices:', error);
+      return [];
+    }
   }
 }
 
@@ -70,7 +76,7 @@ async function storePrices(prices) {
     if (error) {
       console.error('Error storing price:', error);
     } else {
-      console.log(`Prices stored successfully @ ${timestamp}`);
+      console.log('Prices stored successfully');
     }
   });
 }
@@ -88,6 +94,22 @@ async function main() {
     }
   }
 }
+
+// Handle graceful shutdown
+function handleExit(signal) {
+  console.log(`Received ${signal}. Closing MySQL connection...`);
+  connection.end(err => {
+    if (err) {
+      console.error('Error closing MySQL connection:', err);
+    } else {
+      console.log('MySQL connection closed.');
+    }
+    process.exit(0);
+  });
+}
+
+process.on('SIGINT', handleExit);
+process.on('SIGTERM', handleExit);
 
 // Run the main function
 main();
