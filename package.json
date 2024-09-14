@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "luxon": "^3.5.0",
+    "mysql2": "^3.11.2"
+  },
+  "name": "fetch_price",
+  "version": "1.0.0",
+  "main": "fetch_prices.js",
+  "scripts": {
+    "start": "node fetch_prices.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
