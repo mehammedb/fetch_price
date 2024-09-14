@@ -15,27 +15,52 @@ const connection = mysql.createConnection({
 
 // Route to get the latest data
 app.get('/', (req, res) => {
-  connection.query('SELECT * FROM coin_price ORDER BY id DESC LIMIT 1', (error, results) => {
-    if (error) {
-      return res.status(500).send('Error fetching data');
-    }
-    if (results.length > 0) {
-      const result = results[0];
-      console.log('Original timestamp:', result.timestamp); // Debugging line
-      // Convert the timestamp to local time zone
-      if (result.timestamp) {
-        result.timestamp = DateTime.fromSQL(result.timestamp, { zone: 'utc' })
-          .setZone('Africa/Addis_Ababa')
-          .toSQL({ includeOffset: false });
-        console.log('Converted timestamp:', result.timestamp); // Debugging line
-      } else {
-        console.log('Timestamp is null or undefined'); // Debugging line
+    connection.query('SELECT * FROM coin_price ORDER BY id DESC LIMIT 1', (error, results) => {
+      if (error) {
+        return res.status(500).send('Error fetching data');
       }
-      res.json(result);
-    } else {
-      res.status(404).send('No data found');
-    }
-  });
+      if (results.length > 0) {
+        const result = results[0];
+        console.log('Original timestamp:', result.timestamp); // Debugging line
+  
+        // Ensure timestamp exists
+        if (result.timestamp) {
+          // Try to parse using different formats if necessary
+          let dateTime;
+          
+          try {
+            // First, try parsing as ISO 8601
+            dateTime = DateTime.fromISO(result.timestamp, { zone: 'utc' });
+          } catch (e) {
+            console.log('ISO parsing failed:', e.message);
+          }
+          
+          if (!dateTime.isValid) {
+            try {
+              // If ISO parsing fails, try parsing as a general Date string
+              dateTime = DateTime.fromJSDate(new Date(result.timestamp), { zone: 'utc' });
+            } catch (e) {
+              console.log('JSDate parsing failed:', e.message);
+            }
+          }
+
+          if (dateTime && dateTime.isValid) {
+            // Convert to the desired format and time zone
+            result.timestamp = dateTime.setZone('Africa/Addis_Ababa')
+              .toFormat('yyyy-MM-dd HH:mm:ss');
+            console.log('Formatted timestamp:', result.timestamp); // Debugging line
+          } else {
+            console.log('Invalid timestamp format:', dateTime ? dateTime.invalidExplanation : 'Unknown'); // Debugging line
+          }
+        } else {
+          console.log('Timestamp is null or undefined'); // Debugging line
+        }
+  
+        res.json(result);
+      } else {
+        res.status(404).send('No data found');
+      }
+    });
 });
 
 // Start the server
