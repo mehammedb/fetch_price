@@ -76,7 +76,7 @@ async function storePrices(prices) {
     if (error) {
       console.error('Error storing price:', error);
     } else {
-      console.log('Prices stored successfully');
+      console.log(`Prices stored successfully @ ${timestamp}`);
     }
   });
 }
