@@ -81,35 +81,18 @@ async function storePrices(prices) {
   });
 }
 
-// Main function to fetch and store prices every minute
+// Main function to fetch and store prices
 async function main() {
-  while (true) {
-    const now = DateTime.now().setZone('Africa/Addis_Ababa');
-    if (now.second === 0) {
-      const prices = await fetchLivePrices();
-      await storePrices(prices);
-      await new Promise(resolve => setTimeout(resolve, 60000)); // Wait for 60 seconds
-    } else {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Check every second
-    }
-  }
-}
-
-// Handle graceful shutdown
-function handleExit(signal) {
-  console.log(`Received ${signal}. Closing MySQL connection...`);
+  const prices = await fetchLivePrices();
+  await storePrices(prices);
   connection.end(err => {
     if (err) {
       console.error('Error closing MySQL connection:', err);
     } else {
       console.log('MySQL connection closed.');
     }
-    process.exit(0);
   });
 }
-
-process.on('SIGINT', handleExit);
-process.on('SIGTERM', handleExit);
 
 // Run the main function
 main();
